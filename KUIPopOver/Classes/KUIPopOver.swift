@@ -32,6 +32,7 @@ fileprivate extension UIView {
         set { objc_setAssociatedObject(self, &AssociatedKeys.onDismissHandler, KUIPopOverUsableDismissHandlerWrapper(newValue), .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
     }
     
+    
 }
 
 extension KUIPopOverUsable where Self: UIView {
@@ -109,6 +110,7 @@ extension KUIPopOverUsable where Self: UIViewController {
         popoverPresentationController?.delegate = KUIPopOverDelegation.shared
         popoverPresentationController?.backgroundColor = popOverBackgroundColor
         popoverPresentationController?.permittedArrowDirections = arrowDirection
+        popoverPresentationController?.popoverBackgroundViewClass = PopoverBackgroundView.self
     }
     
     public func setupPopover(sourceView: UIView, sourceRect: CGRect? = nil) {
@@ -231,4 +233,99 @@ private extension UIViewController {
         return presentedViewController?.topPresentedViewController ?? self
     }
     
+}
+
+/// 自定义 PopoverView的背景：http://www.scianski.com/customizing-uipopover-with-uipopoverbackgroundview/
+class PopoverBackgroundView: UIPopoverBackgroundView {
+
+    lazy var dimmingView: UIView = {
+        let view = UIView()
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+        return view
+    }()
+    
+    lazy var backgroundImgView: UIImageView = {
+        let img = createImage()
+        let imgView = UIImageView(image: img)
+        imgView.contentMode = UIViewContentMode.scaleToFill
+        return imgView
+    }()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        layer.cornerRadius = 3
+        backgroundColor = UIColor.clear
+        addSubview(dimmingView)
+        addSubview(backgroundImgView)
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    var _arrowDirection: UIPopoverArrowDirection = .up
+    var _arrowOffset: CGFloat = 0
+    override var arrowDirection: UIPopoverArrowDirection {
+        set {
+            _arrowDirection = newValue
+            setNeedsLayout()
+        }
+        get {
+            return _arrowDirection
+        }
+    }
+    
+    override var arrowOffset: CGFloat {
+        set {
+            _arrowOffset = newValue
+        }
+        get {
+            return _arrowOffset
+        }
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let rect = convert(bounds, to: UIApplication.shared.keyWindow)
+        dimmingView.frame = CGRect(
+            x: -rect.origin.x,
+            y: -rect.origin.y,
+            width: UIScreen.main.bounds.width,
+            height: UIScreen.main.bounds.height
+        )
+        backgroundImgView.frame = CGRect(
+            x: -10,
+            y: -14,
+            width: self.bounds.width + 20,
+            height: self.bounds.height + 28
+        )
+        layer.shadowOpacity = 0.1
+        layer.shadowRadius = 10
+    }
+    
+    /// 获取资源图片。依赖 podspec - resource_bundles 的配置方式。
+    func createImage() -> UIImage? {
+        guard let reourcePath = Bundle(for: type(of: self)).resourcePath else { return nil }
+        let path = (reourcePath as NSString).appendingPathComponent("KUIPopOverResources.bundle")
+        let bundle = Bundle(path: path)
+        let image = UIImage(named: "nav_Shape", in: bundle, compatibleWith: nil)
+        return image
+    }
+}
+
+/// UIPopoverBackgroundViewMethods
+extension PopoverBackgroundView {
+    /// 箭头底边长度
+    override static func arrowBase() -> CGFloat {
+        return 10
+    }
+    
+    /// 箭头高度
+    override static func arrowHeight() -> CGFloat {
+        return 8
+    }
+    
+    override static func contentViewInsets() -> UIEdgeInsets {
+        return .zero
+    }
 }

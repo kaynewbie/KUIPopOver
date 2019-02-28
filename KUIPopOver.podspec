@@ -104,7 +104,10 @@ Pod::Spec.new do |s|
   #
 
   # s.resource  = "icon.png"
-  # s.resources = "KUIButtonBar/Assets/*.{png,xib}"
+  # s.resources = "KUIButtonBar/Assets/*"
+  s.resource_bundles = {
+    "KUIPopOverResources" => ["KUIPopOver/Assets/*"]
+  }
 
   # s.preserve_paths = "FilesToSave", "MoreFilesToSave"
 
